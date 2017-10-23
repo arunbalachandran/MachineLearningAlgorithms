@@ -1,10 +1,13 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from random import shuffle
+from mpl_toolkits.mplot3d import Axes3D
 
 def clean_datafile(datafile):
     data = ''
     with open(datafile) as fp:
         data = fp.read().strip()
-
+    # initialize lists to store X and Y
     X, Y = [], []
     classification_dict = {}
     count = 1  # classification value conversion
@@ -49,7 +52,12 @@ def test_linear_classifier(beta, test_data, test_classes, num_classes):
     accuracy = (true_positives + true_negatives) / (true_positives + true_negatives + false_positives + false_negatives)
     return accuracy
 
-def cross_validation(X, Y, num_folds, num_classes):
+def cross_validation(X, Y, num_folds, num_classes, shuffle_flag):
+    if shuffle_flag:
+        indices = list(range(len(X)))
+        shuffle(indices)
+        X = [X[i] for i in indices]
+        Y = [Y[i] for i in indices]
     subset_size = len(X) // num_folds
     # push the biggest subset to the end if the subsets are not equal in size
     avg_accuracy = 0
@@ -65,18 +73,38 @@ def cross_validation(X, Y, num_folds, num_classes):
             training_data  = X[:i*subset_size] + X[(i+1)*subset_size:]
             training_classes = Y[:i*subset_size] + Y[(i+1)*subset_size:]
         beta = train_linear_classifier(training_data, training_classes)
-        #print (beta)
+        print (beta)
         accuracy_values = test_linear_classifier(beta, test_data, test_classes, num_classes)
-        #for j in accuracy_values:
-        #    avg_accuracy[j-1] += accuracy_values[j] 
         print ('Accuracy values for fold', i, 'are', accuracy_values)
-    #avg_accuracy = [j/num_folds for j in avg_accuracy]
         avg_accuracy += accuracy_values 
     avg_accuracy = avg_accuracy / num_folds
     print (avg_accuracy)
 
+def plot_data(X, Y):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d') 
+    numpy_X = np.array(X)
+    print(numpy_X)
+    handles_1 = ax.scatter(numpy_X[:50,0], numpy_X[:50,1], numpy_X[:50,2], c=numpy_X[:50,3], marker='s')
+    handles_2 = ax.scatter(numpy_X[:100,0], numpy_X[:100,1], numpy_X[:100,2], c=numpy_X[:100,3], marker='o')
+    handles_3 = ax.scatter(numpy_X[:150,0], numpy_X[:150,1], numpy_X[:150,2], c=numpy_X[:150,3], marker='^')
+    colorbar = fig.colorbar(handles_3, shrink=0.5, aspect=5)
+    colorbar.set_label('Petal Height')
+    ax.set_xlabel('Sepal Length')
+    ax.set_ylabel('Sepal Width')
+    ax.set_zlabel('Petal Length')
+    plt.legend([handles_1, handles_2, handles_3], ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica'])
+    plt.show()
+
 if __name__ == '__main__':
     datafile = input('Enter the name of the file to be tested : ')
+    shuffle_data = input('Do you want to shuffle the data? Enter y or n : ')
+    shuffle_flag = False
+    if shuffle_data == 'y':
+        shuffle_flag = True
+    else:
+        print ('Shuffling not enabled for cross validation')
     X, Y, num_classes = clean_datafile(datafile)
     print ('num classes', num_classes)
-    cross_validation(X, Y, 15, num_classes)
+    plot_data(X, Y)
+    cross_validation(X, Y, 15, num_classes, shuffle_flag)
